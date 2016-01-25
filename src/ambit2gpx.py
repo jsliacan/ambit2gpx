@@ -3,6 +3,11 @@ import xml.dom.minidom
 import math
 import getopt
 import sys
+import time
+
+
+SUUNTO=os.path.join(os.path.expanduser("~"), 'Library', 'Application Support','Suunto','Moveslink2')
+WATCH="Watch ID: F8A5095110000E00\n"
 
 def radian2degree(radian):
     return radian * 180.0 / math.pi
@@ -210,17 +215,19 @@ xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/
 
 def usage():
     print """
-ambit2gpx [--suunto] [--noalti] [--altibaro] [--noext] filename
+ambit2gpx [--suunto] [--noalti] [--altibaro] [--noext] filename [--watch]
 Creates a file filename.gpx in GPX format from filename in Suunto Ambit SML format.
 If option --suunto is given, only retain GPS fixes retained by Suunto distance algorithm.
 If option --noalti is given, elevation will be put to zero.
 If option --altibaro is given, elevation is retrieved from altibaro information. The default is to retrieve GPS elevation information.
 If option --noext is given, extended data (hr, temperature, cadence) will not generated. Useful for instance if size of output file matters.
+If option --watch is given, print ID of the watch.
 """
 
+    
 def main():
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ha", ["help", "suunto", "noalti", "altibaro", "noext"])
+        opts, args = getopt.getopt(sys.argv[1:], "ha", ["help", "suunto", "noalti", "altibaro", "noext", "watch"])
     except getopt.GetoptError, err:
         # print help information and exit:
         print str(err) # will print something like "option -a not recognized"
@@ -235,6 +242,7 @@ def main():
     noalti = False
     altibaro = False
     noext = False
+    watch = False
     lastdistance = 0
     first = True
     for o, a in opts:
@@ -249,11 +257,18 @@ def main():
             altibaro = True
         elif o in ("--noext"):
             noext = True
+        elif o in ("--watch"):
+            watch = True
         else:
             assert False, "unhandled option"
     # ...
-    
-    filename = args[0]
+
+    if watch == True:
+        print WATCH
+        exit()
+        
+    fname = args[0][16:-4] # remove product ID from the front and '.sml' from the back
+    filename = os.path.join(SUUNTO, args[0])
     (rootfilename, ext) = os.path.splitext(filename)
     if (ext == ""):
         filename += ".sml"
@@ -271,8 +286,9 @@ def main():
     top = doc.getElementsByTagName('top')
     assert len(top) == 1    
     print "Done."
-    
-    outputfilename = rootfilename+ '.gpx'
+
+    timestr = time.strftime("%Y%m%d-%H%M%S")
+    outputfilename = os.path.join(os.path.expanduser("~"),'Suunto','Exe'+fname+'.gpx')
     outputfile = open(outputfilename, 'w')
     print "Creating file {0}".format(outputfilename)
     AmbitXMLParser(top[0], suunto, noalti, altibaro, noext, outputfile, lastdistance, first).execute()

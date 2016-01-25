@@ -1,0 +1,3 @@
+#!/bin/sh
+
+python /Users/srobik/Github/ambit2gpx/src/ambit2gpx.py $1
